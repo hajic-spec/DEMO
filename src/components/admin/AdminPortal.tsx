@@ -14,6 +14,7 @@ import {
   Printer,
   Receipt,
   RefreshCw,
+  Share2,
   Trash2,
   Upload,
   Users,
@@ -46,6 +47,7 @@ import {
 import { loadAdminStore, resetAdminStore, saveAdminStore } from '../../utils/storage';
 import { ReliefEmblem } from '../ReliefLogo';
 import { PrintDocumentModal } from './PrintDocumentModal';
+import { SocialLaunchKit } from './SocialLaunchKit';
 import { WhatsAppComposerModal } from './WhatsAppComposerModal';
 
 interface AdminPortalProps {
@@ -59,6 +61,7 @@ type AdminTab =
   | 'invoices'
   | 'planning'
   | 'clients'
+  | 'social'
   | 'backup';
 
 const DEMO_PIN = '06130';
@@ -420,6 +423,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
       badge: kpis.upcomingEventsCount || undefined,
     },
     { id: 'clients', label: 'Clients & Terrains', icon: <Users className="w-4 h-4" /> },
+    { id: 'social', label: 'Réseaux & Lancement', icon: <Share2 className="w-4 h-4" /> },
     { id: 'backup', label: 'Sauvegarde JSON', icon: <Download className="w-4 h-4" /> },
   ];
 
@@ -435,6 +439,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
     invoices: 'Facturation & encaissements',
     planning: 'Planning visites & chantiers',
     clients: 'Fiches clients & terrains',
+    social: 'Réseaux sociaux & Kit de lancement',
     backup: 'Sauvegarde & continuité des données',
   };
 
@@ -1733,7 +1738,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
             </div>
           )}
 
-          {/* ========== TAB 7 : SAUVEGARDE JSON ========== */}
+          {/* ========== TAB 7 : RESEAUX SOCIAUX & LANCEMENT ========== */}
+          {activeTab === 'social' && <SocialLaunchKit />}
+
+          {/* ========== TAB 8 : SAUVEGARDE JSON ========== */}
           {activeTab === 'backup' && (
             <div className="bg-white border border-[#E5DEC9] rounded-xl p-6 max-w-2xl space-y-5">
               <div>
