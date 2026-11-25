@@ -337,35 +337,189 @@ export const OFFER_SCENARIOS = [
   },
 ] as const;
 
+export interface OfferComparisonProfile {
+  id: string;
+  code: string;
+  shortName: string;
+  autonomyLevel: number;
+  plainSummary: string;
+  unlockHighlight: string;
+  numericPrices: {
+    once: number;
+    three: number;
+    sub: number;
+  };
+}
+
+export const OFFER_COMPARISON_PROFILES: OfferComparisonProfile[] = [
+  {
+    id: 'formule-01',
+    code: '01',
+    shortName: 'Vitrine',
+    autonomyLevel: 1,
+    plainSummary:
+      'Vous êtes présent proprement sur Google à Grasse : vos prospects comprennent vos 6 métiers et vous appellent directement.',
+    unlockHighlight: 'Image pro immédiate & prise de contact en 1 page',
+    numericPrices: { once: 360, three: 120, sub: 39 },
+  },
+  {
+    id: 'formule-02',
+    code: '02',
+    shortName: 'Multi-Pages',
+    autonomyLevel: 2,
+    plainSummary:
+      'Chaque spécialité a sa page dédiée et les clients précisent leur besoin (oliviers, OLD, surface) avant même de vous appeler.',
+    unlockHighlight: 'Pages par métier + Configurateur de chantier',
+    numericPrices: { once: 790, three: 263.33, sub: 79 },
+  },
+  {
+    id: 'formule-03',
+    code: '03',
+    shortName: 'Bureau /admin',
+    autonomyLevel: 3,
+    plainSummary:
+      'Vous centralisez demandes, devis PDF A4, factures et planning dans votre espace privé /admin avec relance WhatsApp en 1 clic.',
+    unlockHighlight: 'Devis PDF, facturation & planning privé /admin',
+    numericPrices: { once: 1390, three: 463.33, sub: 129 },
+  },
+  {
+    id: 'formule-04',
+    code: '04',
+    shortName: 'Cloud Auto',
+    autonomyLevel: 4,
+    plainSummary:
+      'Chaque demande reçue sur le site prépare automatiquement un pré-devis chiffré et déclenche vos rappels saisonniers 06.',
+    unlockHighlight: 'Zéro ressaisie : pré-devis automatiques & rappels 06',
+    numericPrices: { once: 1890, three: 630, sub: 169 },
+  },
+  {
+    id: 'formule-05',
+    code: '05',
+    shortName: 'Portail Client',
+    autonomyLevel: 5,
+    plainSummary:
+      'Vos propriétaires de villas et syndics ont leur carnet privé en ligne : attestations OLD 06, factures et accord devis en 1 clic.',
+    unlockHighlight: 'Espace propriétaire 24/7 & attestations OLD 06',
+    numericPrices: { once: 2490, three: 830, sub: 219 },
+  },
+  {
+    id: 'formule-06',
+    code: '06',
+    shortName: 'Appli /app',
+    autonomyLevel: 6,
+    plainSummary:
+      'Votre atelier tient dans la poche même sans réseau : chrono, oliviers, jauge OLD 06, devis express sur place et carnet client PWA.',
+    unlockHighlight: 'Application mobile hors-ligne Terrain & Client (/app)',
+    numericPrices: { once: 3290, three: 1096.67, sub: 289 },
+  },
+];
+
+export type ComparisonCellStatus = 'none' | 'included' | 'best';
+
+export interface OfferComparisonCell {
+  status: ComparisonCellStatus;
+  label: string;
+}
+
 export interface OfferComparisonRow {
+  id: string;
+  category: 'Visibilité' | 'Clients & Devis' | 'Organisation' | 'Terrain & App';
   feature: string;
-  levels: [string, string, string, string, string, string];
+  benefit: string;
+  cells: [
+    OfferComparisonCell,
+    OfferComparisonCell,
+    OfferComparisonCell,
+    OfferComparisonCell,
+    OfferComparisonCell,
+    OfferComparisonCell,
+  ];
 }
 
 export const OFFER_COMPARISON_MATRIX: OfferComparisonRow[] = [
   {
-    feature: 'Vitrine sur mesure & SEO local Grasse (06)',
-    levels: ['1 page', 'Multi-onglets', 'Multi-onglets', 'Multi-onglets', 'Multi-onglets', 'Multi-onglets'],
+    id: 'vitrine-seo',
+    category: 'Visibilité',
+    feature: 'Être visible sur Google à Grasse & alentours',
+    benefit: 'Présente votre savoir-faire (oliviers, OLD, arrosage) aux propriétaires du 06.',
+    cells: [
+      { status: 'included', label: '1 page' },
+      { status: 'best', label: 'Multi-pages' },
+      { status: 'best', label: 'Multi-pages' },
+      { status: 'best', label: 'Multi-pages' },
+      { status: 'best', label: 'Multi-pages' },
+      { status: 'best', label: 'Multi-pages' },
+    ],
   },
   {
-    feature: 'Formulaire d’étude & appel direct',
-    levels: ['Inclus', 'Configurateur', 'Configurateur', 'Capture auto', 'Capture auto', 'Capture auto'],
+    id: 'demandes-qualifiees',
+    category: 'Clients & Devis',
+    feature: 'Recevoir des demandes de chantier détaillées',
+    benefit: 'Le prospect indique commune, service et contraintes avant votre rappel.',
+    cells: [
+      { status: 'included', label: 'Formulaire' },
+      { status: 'included', label: 'Configurateur' },
+      { status: 'included', label: 'Configurateur' },
+      { status: 'best', label: 'Pré-devis auto' },
+      { status: 'best', label: 'Pré-devis auto' },
+      { status: 'best', label: 'Pré-devis auto' },
+    ],
   },
   {
-    feature: 'Espace gérant privé /admin (Devis PDF, Factures, Planning)',
-    levels: ['—', '—', 'Inclus', 'Sync Cloud', 'Sync Cloud', 'Sync Cloud'],
+    id: 'admin-devis-factures',
+    category: 'Organisation',
+    feature: 'Créer devis PDF, factures & suivre le planning',
+    benefit: 'Fini la paperasse le soir : export A4 conforme et envoi WhatsApp en 1 clic.',
+    cells: [
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'included', label: 'Bureau /admin' },
+      { status: 'best', label: 'Sync Cloud' },
+      { status: 'best', label: 'Sync Cloud' },
+      { status: 'best', label: 'Sync Cloud' },
+    ],
   },
   {
-    feature: 'Pré-devis auto + Rappels saisonniers (Oliviers / OLD)',
-    levels: ['—', '—', 'Manuel', 'Automatisé', 'Automatisé', 'Automatisé'],
+    id: 'automatisation-rappels',
+    category: 'Organisation',
+    feature: 'Relances devis & rappels saisonniers (Oliviers / OLD)',
+    benefit: 'Anticipez automatiquement les campagnes de taille, récolte et débroussaillement.',
+    cells: [
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'included', label: 'Manuel' },
+      { status: 'best', label: 'Automatisé' },
+      { status: 'best', label: 'Automatisé' },
+      { status: 'best', label: 'Automatisé' },
+    ],
   },
   {
-    feature: 'Portail Propriétaires & Attestations OLD 06',
-    levels: ['—', '—', '—', '—', 'Inclus', 'Inclus + App'],
+    id: 'portail-proprietaire',
+    category: 'Clients & Devis',
+    feature: 'Carnet privé pour vos propriétaires & syndics',
+    benefit: 'Vos clients consultent attestations OLD 06, factures et acceptent vos devis en ligne.',
+    cells: [
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'included', label: 'Portail Web' },
+      { status: 'best', label: 'Portail + App' },
+    ],
   },
   {
-    feature: 'Application Mobile Terrain & Client (/app hors-ligne)',
-    levels: ['—', '—', '—', '—', '—', 'Inclus (PWA)'],
+    id: 'appli-terrain-pwa',
+    category: 'Terrain & App',
+    feature: 'Appli mobile Terrain & hors-ligne en restanques',
+    benefit: 'Chrono, compteur oliviers, jauge OLD 06 et devis WhatsApp directement sur site.',
+    cells: [
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'none', label: '—' },
+      { status: 'best', label: 'Appli /app' },
+    ],
   },
 ];
 

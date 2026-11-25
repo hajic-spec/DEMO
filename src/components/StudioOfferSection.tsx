@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   ArrowUpRight,
   Check,
-  ChevronDown,
-  ChevronUp,
   EyeOff,
   Lock,
   Phone,
@@ -11,11 +9,11 @@ import {
 } from 'lucide-react';
 import {
   COMPANY_INFO,
-  OFFER_COMPARISON_MATRIX,
   OFFER_SCENARIOS,
   STUDIO_OFFERS,
 } from '../data/seedData';
 import type { BillingMode } from '../types/relief';
+import { OfferComparator } from './OfferComparator';
 
 interface StudioOfferSectionProps {
   onOpenAdmin: () => void;
@@ -36,7 +34,6 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
 }) => {
   const [billingMode, setBillingMode] = useState<BillingMode>('once');
   const [selectedScenario, setSelectedScenario] = useState<ScenarioId | null>(null);
-  const [showMatrix, setShowMatrix] = useState<boolean>(true);
   const [hiddenForClientPreview, setHiddenForClientPreview] = useState(false);
 
   if (hiddenForClientPreview) {
@@ -474,92 +471,21 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
           </div>
         </article>
 
-        {/* Matrice comparative interactive */}
-        <div className="mt-8 bg-white border border-[#E5DEC9] rounded-xl overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowMatrix((v) => !v)}
-            aria-expanded={showMatrix}
-            className="w-full px-5 md:px-6 py-4 flex items-center justify-between gap-4 text-left hover:bg-[#FAF8F3] transition-colors"
-          >
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9C7228]">
-                Comparatif technique
-              </p>
-              <h3 className="font-serif text-xl md:text-2xl font-semibold text-[#0E281B]">
-                Tableau comparatif des 6 formules
-              </h3>
-            </div>
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0E281B] shrink-0">
-              <span>{showMatrix ? 'Masquer' : 'Afficher'}</span>
-              {showMatrix ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </span>
-          </button>
-
-          {showMatrix && (
-            <div className="overflow-x-auto border-t border-[#E5DEC9]">
-              <table className="w-full min-w-[760px] text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#FAF8F3] border-b border-[#E5DEC9] text-[11px] uppercase tracking-[0.1em] text-[#647068]">
-                    <th className="py-3 px-4 font-semibold">Capacité incluse</th>
-                    {STUDIO_OFFERS.map((o, idx) => (
-                      <th
-                        key={o.id}
-                        className={`py-3 px-3 font-semibold text-center ${
-                          idx === 5 ? 'text-[#0E281B] bg-[#EBD9B3]/35' : ''
-                        }`}
-                      >
-                        F0{idx + 1}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E5DEC9] text-xs md:text-sm">
-                  {OFFER_COMPARISON_MATRIX.map((row) => (
-                    <tr key={row.feature} className="hover:bg-[#FAF8F3]/70">
-                      <td className="py-3 px-4 font-medium text-[#0E281B]">{row.feature}</td>
-                      {row.levels.map((val, idx) => (
-                        <td
-                          key={`${row.feature}-${idx}`}
-                          className={`py-3 px-3 text-center whitespace-nowrap tabular-nums ${
-                            val === '—'
-                              ? 'text-[#A0A8A3]'
-                              : idx === 5
-                                ? 'font-semibold text-[#0E281B] bg-[#EBD9B3]/20'
-                                : 'text-[#3E4A43] font-medium'
-                          }`}
-                        >
-                          {val}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                  <tr className="bg-[#FAF8F3] border-t-2 border-[#E5DEC9]">
-                    <td className="py-3.5 px-4 font-semibold text-[#0E281B]">
-                      Tarif ({billingMode === 'once' ? '1×' : billingMode === 'three' ? '3×' : 'Mensuel'})
-                    </td>
-                    {STUDIO_OFFERS.map((o, idx) => (
-                      <td
-                        key={`price-${o.id}`}
-                        className={`py-3.5 px-3 text-center font-serif font-bold tabular-nums whitespace-nowrap ${
-                          idx === 5
-                            ? 'text-[#0E281B] bg-[#EBD9B3]/40 text-base'
-                            : 'text-[#9C7228]'
-                        }`}
-                      >
-                        {o.prices[billingMode].main}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        {/* Comparateur interactif ludique (Tableau complet + Duel 2 formules) */}
+        <OfferComparator
+          billingMode={billingMode}
+          suggestedOfferIndex={
+            activeScenario
+              ? STUDIO_OFFERS.findIndex(
+                  (o) =>
+                    o.id ===
+                    activeScenario.recommendedIds[activeScenario.recommendedIds.length - 1]
+                )
+              : undefined
+          }
+          onOpenAdmin={onOpenAdmin}
+          onOpenApp={onOpenApp}
+        />
 
         <div className="mt-8 pt-5 border-t border-dashed border-[#E5DEC9] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#647068]">
           <span>
