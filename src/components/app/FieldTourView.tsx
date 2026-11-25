@@ -27,6 +27,8 @@ interface FieldTourViewProps {
   onResetTimer: () => void;
   onSaveTimerToLog: () => void;
   onToggleEventDone: (eventId: string) => void;
+  isPreviewOnly?: boolean;
+  onRequireUnlock?: (reason: string) => void;
 }
 
 export const FieldTourView: React.FC<FieldTourViewProps> = ({
@@ -41,6 +43,8 @@ export const FieldTourView: React.FC<FieldTourViewProps> = ({
   onResetTimer,
   onSaveTimerToLog,
   onToggleEventDone,
+  isPreviewOnly = false,
+  onRequireUnlock,
 }) => {
   const activeEvent = events.find((e) => e.id === activeEventId) || events[0];
   const pendingCount = events.filter((e) => !e.completed).length;
@@ -208,25 +212,57 @@ export const FieldTourView: React.FC<FieldTourViewProps> = ({
                   </button>
 
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Itinéraire GPS vers ${ev.clientName}`}
-                      className="min-h-[44px] px-3 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] text-xs font-semibold inline-flex items-center gap-1.5 hover:border-[#B5893A]"
-                    >
-                      <Navigation className="w-4 h-4 text-[#9C7228]" />
-                      <span>GPS</span>
-                    </a>
-                    <a
-                      href={arrivalWaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[44px] px-3 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] text-xs font-semibold inline-flex items-center gap-1.5 hover:border-[#B5893A]"
-                    >
-                      <MessageCircle className="w-4 h-4 text-[#1E6B43]" />
-                      <span>WhatsApp</span>
-                    </a>
+                    {isPreviewOnly && onRequireUnlock ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onRequireUnlock(
+                              'Le lancement GPS direct vers les propriétés clients est réservé aux comptes activés (Formule 06).'
+                            )
+                          }
+                          aria-label={`Itinéraire GPS vers ${ev.clientName}`}
+                          className="min-h-[44px] px-3 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] text-xs font-semibold inline-flex items-center gap-1.5 hover:border-[#B5893A]"
+                        >
+                          <Navigation className="w-4 h-4 text-[#9C7228]" />
+                          <span>GPS</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onRequireUnlock(
+                              'L’envoi de messages WhatsApp pré-remplis depuis la tournée terrain est verrouillé en prévisualisation partielle.'
+                            )
+                          }
+                          className="min-h-[44px] px-3 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] text-xs font-semibold inline-flex items-center gap-1.5 hover:border-[#B5893A]"
+                        >
+                          <MessageCircle className="w-4 h-4 text-[#1E6B43]" />
+                          <span>WhatsApp</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <a
+                          href={mapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Itinéraire GPS vers ${ev.clientName}`}
+                          className="min-h-[44px] px-3 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] text-xs font-semibold inline-flex items-center gap-1.5 hover:border-[#B5893A]"
+                        >
+                          <Navigation className="w-4 h-4 text-[#9C7228]" />
+                          <span>GPS</span>
+                        </a>
+                        <a
+                          href={arrivalWaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="min-h-[44px] px-3 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] text-xs font-semibold inline-flex items-center gap-1.5 hover:border-[#B5893A]"
+                        >
+                          <MessageCircle className="w-4 h-4 text-[#1E6B43]" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => onToggleEventDone(ev.id)}

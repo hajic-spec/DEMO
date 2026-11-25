@@ -48,11 +48,12 @@ import {
   getConfiguredPasscode,
   grantSessionUnlock,
   hasSessionUnlock,
+  isModuleUnlockedInPreview,
   isPaidLicenseActive,
   verifyAccessPasscode,
 } from '../../utils/accessControl';
 import { loadAdminStore, resetAdminStore, saveAdminStore } from '../../utils/storage';
-import { ActivationLockScreen } from '../ActivationLockScreen';
+import { ModulePreviewLock, PreviewBanner, UnlockLicenseModal } from '../PreviewBanner';
 import { ReliefEmblem } from '../ReliefLogo';
 import { PrintDocumentModal } from './PrintDocumentModal';
 import { SocialLaunchKit } from './SocialLaunchKit';
@@ -77,6 +78,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   const [unlocked, setUnlocked] = useState<boolean>(() => hasSessionUnlock('admin'));
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockReason, setUnlockReason] = useState<string | null>(null);
+
+  const isPreviewOnly = !unlocked;
 
   const [store, setStore] = useState<AdminStore>(() => loadAdminStore());
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
@@ -136,11 +141,42 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   const [backupNotice, setBackupNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    saveAdminStore(store);
-  }, [store]);
+    if (!isPreviewOnly) {
+      saveAdminStore(store);
+    }
+  }, [store, isPreviewOnly]);
 
   const kpis = computeAdminKpis(store);
   const selectedQuote = store.quotes.find((q) => q.id === selectedQuoteId) ?? null;
+
+  const requireFullAdminUnlock = (reason: string): boolean => {
+    if (!isPreviewOnly) return true;
+    setUnlockReason(reason);
+    setShowUnlockModal(true);
+    return false;
+  };
+
+  const openPrintPreview = (payload: { mode: 'quote' | 'invoice'; doc: Quote | Invoice }) => {
+    if (
+      !requireFullAdminUnlock(
+        'La génération et l’impression PDF A4 des devis et factures sont activées après souscription.'
+      )
+    ) {
+      return;
+    }
+    setPrintPreview(payload);
+  };
+
+  const openWhatsAppModal = (ctx: NonNullable<typeof waContext>) => {
+    if (
+      !requireFullAdminUnlock(
+        'L’envoi de messages WhatsApp pré-remplis vers vos clients est verrouillé en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
+    setWaContext(ctx);
+  };
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +193,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   // Lead handlers
   const handleAddManualLead = (e: React.FormEvent) => {
     e.preventDefault();
+    if (
+      !requireFullAdminUnlock(
+        'L’ajout de nouvelles demandes dans le suivi commercial est réservé aux comptes activés.'
+      )
+    ) {
+      return;
+    }
     if (!newLead.name.trim() || !newLead.phone.trim()) return;
     const created: Lead = {
       id: 'DEM-' + Date.now().toString().slice(-5),
@@ -182,6 +225,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   };
 
   const handleLeadStatusChange = (leadId: string, status: LeadStatus) => {
+    if (
+      !requireFullAdminUnlock(
+        'La mise à jour du statut des demandes est verrouillée en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     setStore((prev) => ({
       ...prev,
       leads: prev.leads.map((l) => (l.id === leadId ? { ...l, status } : l)),
@@ -193,6 +243,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
     if (existing) {
       setSelectedQuoteId(existing.id);
       setActiveTab('quotes');
+      return;
+    }
+    if (
+      !requireFullAdminUnlock(
+        'La création automatique de nouveaux pré-devis depuis une demande est réservée aux comptes activés.'
+      )
+    ) {
       return;
     }
     const createdQuote = createPrefilledQuoteFromLead(lead, store.quotes);
@@ -209,6 +266,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
 
   // Quote editing handlers
   const updateSelectedQuote = (updater: (q: Quote) => Quote) => {
+    if (
+      !requireFullAdminUnlock(
+        'L’édition et la sauvegarde des pré-devis sont verrouillées en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     if (!selectedQuoteId) return;
     setStore((prev) => ({
       ...prev,
@@ -217,6 +281,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   };
 
   const handleConvertQuoteToInvoice = (quote: Quote) => {
+    if (
+      !requireFullAdminUnlock(
+        'La conversion en facture et l’accès au module Facturation nécessitent une activation complète.'
+      )
+    ) {
+      return;
+    }
     const existingInv = store.invoices.find((i) => i.quoteId === quote.id);
     if (existingInv) {
       setActiveTab('invoices');
@@ -236,6 +307,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
 
   // Invoice handlers
   const handleToggleInvoicePaid = (invoiceId: string) => {
+    if (
+      !requireFullAdminUnlock(
+        'Le suivi des règlements et la facturation sont verrouillés en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     setStore((prev) => ({
       ...prev,
       invoices: prev.invoices.map((inv) => {
@@ -251,6 +329,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   };
 
   const handleInvoicePaymentMethod = (invoiceId: string, method: PaymentMethod) => {
+    if (
+      !requireFullAdminUnlock(
+        'La modification du mode de règlement est verrouillée en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     setStore((prev) => ({
       ...prev,
       invoices: prev.invoices.map((inv) =>
@@ -262,6 +347,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   // Planning handlers
   const handleAddEvent = (e: React.FormEvent) => {
     e.preventDefault();
+    if (
+      !requireFullAdminUnlock(
+        'L’ajout d’interventions au planning est réservé aux comptes activés.'
+      )
+    ) {
+      return;
+    }
     if (!newEvent.clientName.trim()) return;
     const evt: PlanningEvent = {
       id: 'evt-' + Date.now(),
@@ -290,6 +382,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   // Client directory handlers
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
+    if (
+      !requireFullAdminUnlock(
+        'La création de fiches clients et terrains est réservée aux comptes activés.'
+      )
+    ) {
+      return;
+    }
     if (!newClient.name.trim() || !newClient.phone.trim()) return;
     const cli: ClientProperty = {
       id: 'cli-' + Date.now(),
@@ -317,6 +416,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
 
   // Backup JSON export/import
   const handleExportJson = () => {
+    if (
+      !requireFullAdminUnlock(
+        'L’export des sauvegardes JSON est verrouillé en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -328,6 +434,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
   };
 
   const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (
+      !requireFullAdminUnlock(
+        'L’importation de données JSON est verrouillée en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -347,17 +460,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
     reader.readAsText(file);
   };
 
-  // ==================== LICENSE / PIN GATE ====================
-  if (!unlocked) {
-    if (!paidLicense) {
-      return (
-        <ActivationLockScreen
-          area="admin"
-          onUnlock={() => setUnlocked(true)}
-          onBackToSite={onBackToSite}
-        />
-      );
-    }
+  // ==================== PAID LICENSE PIN GATE ====================
+  if (!unlocked && paidLicense) {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#163B29] via-[#0E281B] to-[#091B12] flex items-center justify-center p-5">
@@ -492,6 +596,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
           <nav aria-label="Menu espace gérant" className="space-y-1">
             {navEntries.map((item) => {
               const active = activeTab === item.id;
+              const tabUnlocked = isModuleUnlockedInPreview('admin', item.id, !isPreviewOnly);
               return (
                 <button
                   key={item.id}
@@ -510,15 +615,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                     {item.icon}
                     <span className="truncate">{item.label}</span>
                   </span>
-                  {item.badge !== undefined && (
-                    <span
-                      className={`font-mono-num text-xs px-1.5 py-0.5 rounded ${
-                        active ? 'bg-[#091B12] text-[#EBD9B3]' : 'bg-white/15 text-[#EBD9B3]'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    {!tabUnlocked && (
+                      <Lock
+                        aria-label="Verrouillé en prévisualisation"
+                        className={`w-3.5 h-3.5 ${active ? 'text-[#091B12]' : 'text-[#CFA75B]'}`}
+                      />
+                    )}
+                    {item.badge !== undefined && (
+                      <span
+                        className={`font-mono-num text-xs px-1.5 py-0.5 rounded ${
+                          active ? 'bg-[#091B12] text-[#EBD9B3]' : 'bg-white/15 text-[#EBD9B3]'
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </span>
                 </button>
               );
             })}
@@ -542,6 +655,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
 
       {/* ==================== MAIN AREA ==================== */}
       <div className="flex flex-col min-w-0">
+        {isPreviewOnly && (
+          <PreviewBanner
+            area="admin"
+            onRequestUnlock={() => {
+              setUnlockReason(null);
+              setShowUnlockModal(true);
+            }}
+            onBackToSite={onBackToSite}
+          />
+        )}
         <header className="bg-white border-b border-[#E5DEC9] px-5 md:px-8 py-4 flex items-center justify-between gap-4 sticky top-0 z-30">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -561,6 +684,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
             <button
               type="button"
               onClick={() => {
+                if (
+                  !requireFullAdminUnlock(
+                    'La saisie manuelle de nouvelles demandes est réservée aux comptes activés.'
+                  )
+                ) {
+                  return;
+                }
                 setActiveTab('leads');
                 setShowNewLeadForm(true);
               }}
@@ -677,7 +807,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                             <button
                               type="button"
                               onClick={() =>
-                                setWaContext({
+                                openWhatsAppModal({
                                   clientName: lead.name,
                                   clientPhone: lead.phone,
                                   city: lead.city,
@@ -868,7 +998,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowNewLeadForm((prev) => !prev)}
+                    onClick={() => {
+                      if (
+                        !requireFullAdminUnlock(
+                          'La saisie manuelle de nouvelles demandes est réservée aux comptes activés.'
+                        )
+                      ) {
+                        return;
+                      }
+                      setShowNewLeadForm((prev) => !prev);
+                    }}
                     className="px-3.5 py-2 rounded border border-[#E5DEC9] text-xs font-semibold text-[#0E281B] hover:border-[#B5893A]"
                   >
                     + Ajouter une demande manuelle
@@ -937,7 +1076,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setWaContext({
+                                  openWhatsAppModal({
                                     clientName: lead.name,
                                     clientPhone: lead.phone,
                                     city: lead.city,
@@ -973,6 +1112,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                   <button
                     type="button"
                     onClick={() => {
+                      if (
+                        !requireFullAdminUnlock(
+                          'La création de nouveaux devis et leur sauvegarde sont verrouillées en prévisualisation partielle.'
+                        )
+                      ) {
+                        return;
+                      }
                       const blank = createPrefilledQuoteFromLead(
                         {
                           id: '',
@@ -1058,7 +1204,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                         <button
                           type="button"
                           onClick={() =>
-                            setPrintPreview({ mode: 'quote', doc: selectedQuote })
+                            openPrintPreview({ mode: 'quote', doc: selectedQuote })
                           }
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded border border-[#E5DEC9] text-xs font-semibold text-[#0E281B] hover:border-[#0E281B]"
                         >
@@ -1068,7 +1214,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                         <button
                           type="button"
                           onClick={() =>
-                            setWaContext({
+                            openWhatsAppModal({
                               clientName: selectedQuote.clientName,
                               clientPhone: selectedQuote.clientPhone,
                               city: selectedQuote.clientCity,
@@ -1347,7 +1493,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
           )}
 
           {/* ========== TAB 4 : FACTURATION ========== */}
-          {activeTab === 'invoices' && (
+          {activeTab === 'invoices' &&
+            (isModuleUnlockedInPreview('admin', 'invoices', !isPreviewOnly) ? (
             <div className="bg-white border border-[#E5DEC9] rounded-xl p-6">
               <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-[#E5DEC9]">
                 <h2 className="font-serif text-2xl font-semibold text-[#0E281B]">
@@ -1456,10 +1603,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                 </table>
               </div>
             </div>
-          )}
+            ) : (
+              <ModulePreviewLock
+                title="Facturation, encaissements & PDF A4"
+                description="Transformez vos devis acceptés en factures conformes (franchise TVA art. 293 B ou taux 10% / 20%), suivez les règlements et exportez vos documents A4 prêts à imprimer."
+                requiredFormula="Formule 04 · Devis & Factures"
+                highlights={[
+                  'Conversion devis → facture en 1 clic',
+                  'Suivi Virement / Chèque / Espèces',
+                  'Export PDF A4 haute netteté',
+                  'Relance ou envoi facture par WhatsApp',
+                ]}
+                onRequestUnlock={() => {
+                  setUnlockReason(null);
+                  setShowUnlockModal(true);
+                }}
+                onBackToSite={onBackToSite}
+              />
+            ))}
 
           {/* ========== TAB 5 : PLANNING CHANTIERS ========== */}
-          {activeTab === 'planning' && (
+          {activeTab === 'planning' &&
+            (isModuleUnlockedInPreview('admin', 'planning', !isPreviewOnly) ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               <form
                 onSubmit={handleAddEvent}
@@ -1602,10 +1767,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                 </div>
               </div>
             </div>
-          )}
+            ) : (
+              <ModulePreviewLock
+                title="Planning des chantiers & visites"
+                description="Organisez vos tournées hebdomadaires entre Grasse, Cabris et Mougins, notez les accès et matériels nécessaires et synchronisez chaque passage avec l’application terrain."
+                requiredFormula="Formule 04 · Gestion complète"
+                highlights={[
+                  'Planification par créneau et type d’intervention',
+                  'Checklist matériel (broyeur, filets, nacelle)',
+                  'Suivi d’avancement en temps réel',
+                  'Synchronisation avec la tournée mobile /app',
+                ]}
+                onRequestUnlock={() => {
+                  setUnlockReason(null);
+                  setShowUnlockModal(true);
+                }}
+                onBackToSite={onBackToSite}
+              />
+            ))}
 
           {/* ========== TAB 6 : CLIENTS & TERRAINS ========== */}
-          {activeTab === 'clients' && (
+          {activeTab === 'clients' &&
+            (isModuleUnlockedInPreview('admin', 'clients', !isPreviewOnly) ? (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               <form
                 onSubmit={handleAddClient}
@@ -1751,13 +1934,51 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                 ))}
               </div>
             </div>
-          )}
+            ) : (
+              <ModulePreviewLock
+                title="Fiches clients, terrains & zones OLD 06"
+                description="Centralisez l’historique de chaque propriété (nombre d’oliviers, périmètre OLD 06, arrosage automatique, digicodes d’accès) pour gagner du temps avant chaque visite."
+                requiredFormula="Formule 05 / 06 · Suivi Propriétés"
+                highlights={[
+                  'Inventaire oliviers & équipements arrosage',
+                  'Repérage des parcelles soumises aux OLD 06',
+                  'Codes portail et consignes de sécurité',
+                  'Contact téléphone / WhatsApp instantané',
+                ]}
+                onRequestUnlock={() => {
+                  setUnlockReason(null);
+                  setShowUnlockModal(true);
+                }}
+                onBackToSite={onBackToSite}
+              />
+            ))}
 
           {/* ========== TAB 7 : RESEAUX SOCIAUX & LANCEMENT ========== */}
-          {activeTab === 'social' && <SocialLaunchKit />}
+          {activeTab === 'social' &&
+            (isModuleUnlockedInPreview('admin', 'social', !isPreviewOnly) ? (
+              <SocialLaunchKit />
+            ) : (
+              <ModulePreviewLock
+                title="Réseaux sociaux & Kit de lancement (PNG)"
+                description="Téléchargez vos flyers Affiche A4, visuels Instagram/WhatsApp prêts à publier et textes d’annonce géolocalisés pour démarrer votre visibilité sur le Pays de Grasse."
+                requiredFormula="Formule 03+ · Kit de lancement"
+                highlights={[
+                  'Flyers et vignettes PNG téléchargeables',
+                  'Textes prêts à copier (Google, Instagram, Facebook)',
+                  'QR Code vers votre vitrine professionnelle',
+                  'Plan d’action terrain des 7 premiers jours',
+                ]}
+                onRequestUnlock={() => {
+                  setUnlockReason(null);
+                  setShowUnlockModal(true);
+                }}
+                onBackToSite={onBackToSite}
+              />
+            ))}
 
           {/* ========== TAB 8 : SAUVEGARDE JSON ========== */}
-          {activeTab === 'backup' && (
+          {activeTab === 'backup' &&
+            (isModuleUnlockedInPreview('admin', 'backup', !isPreviewOnly) ? (
             <div className="bg-white border border-[#E5DEC9] rounded-xl p-6 max-w-2xl space-y-5">
               <div>
                 <h2 className="font-serif text-2xl font-semibold text-[#0E281B] mb-1">
@@ -1811,19 +2032,36 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
                 </button>
               </div>
             </div>
-          )}
+            ) : (
+              <ModulePreviewLock
+                title="Sauvegarde & portabilité JSON (0 €)"
+                description="Exportez à tout moment l’intégralité de vos devis, factures, fiches clients et planning au format JSON ouvert pour conserver une archive locale sans abonnement cloud."
+                requiredFormula="Formule 03+ · Portabilité données"
+                highlights={[
+                  'Export complet en 1 clic (.json)',
+                  'Restauration sécurisée sur un nouvel ordinateur',
+                  'Propriété intégrale de votre fichier client',
+                  'Zéro dépendance et zéro loyer caché',
+                ]}
+                onRequestUnlock={() => {
+                  setUnlockReason(null);
+                  setShowUnlockModal(true);
+                }}
+                onBackToSite={onBackToSite}
+              />
+            ))}
         </main>
       </div>
 
-      {/* Modales PDF & WhatsApp */}
-      {printPreview && (
+      {/* Modales PDF, WhatsApp & Activation */}
+      {!isPreviewOnly && printPreview && (
         <PrintDocumentModal
           mode={printPreview.mode}
           doc={printPreview.doc}
           onClose={() => setPrintPreview(null)}
         />
       )}
-      {waContext && (
+      {!isPreviewOnly && waContext && (
         <WhatsAppComposerModal
           clientName={waContext.clientName}
           clientPhone={waContext.clientPhone}
@@ -1833,6 +2071,22 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
           totalTTC={waContext.totalTTC}
           initialTemplate={waContext.initialTemplate}
           onClose={() => setWaContext(null)}
+        />
+      )}
+      {showUnlockModal && (
+        <UnlockLicenseModal
+          area="admin"
+          reason={unlockReason}
+          onUnlocked={() => {
+            setUnlocked(true);
+            setShowUnlockModal(false);
+            setUnlockReason(null);
+          }}
+          onClose={() => {
+            setShowUnlockModal(false);
+            setUnlockReason(null);
+          }}
+          onBackToSite={onBackToSite}
         />
       )}
     </div>

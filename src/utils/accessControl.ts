@@ -61,6 +61,19 @@ export function grantSessionUnlock(area: ProtectedArea): void {
   }
 }
 
+export const ADMIN_PREVIEW_TABS = new Set(['dashboard', 'leads', 'quotes']);
+export const APP_PREVIEW_TABS = new Set(['tournee', 'releve']);
+
+export function isModuleUnlockedInPreview(
+  area: ProtectedArea,
+  tabId: string,
+  isFullUnlocked: boolean
+): boolean {
+  if (isFullUnlocked) return true;
+  if (area === 'admin') return ADMIN_PREVIEW_TABS.has(tabId);
+  return APP_PREVIEW_TABS.has(tabId);
+}
+
 export function clearSessionUnlock(area: ProtectedArea): void {
   if (typeof window === 'undefined') return;
   try {

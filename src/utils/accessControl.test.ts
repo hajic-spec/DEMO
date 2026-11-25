@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  isModuleUnlockedInPreview,
   isPaidLicenseActive,
   isPwaInstallAllowed,
   verifyAccessPasscode,
@@ -29,4 +30,20 @@ test('verifyAccessPasscode never accepts empty codes or legacy 06130 when unconf
   assert.equal(verifyAccessPasscode('06130', 'MonCodePrive99'), false);
   assert.equal(verifyAccessPasscode('MonCodePrive98', 'MonCodePrive99'), false);
   assert.equal(verifyAccessPasscode(' MonCodePrive99 ', 'MonCodePrive99'), true);
+});
+
+test('isModuleUnlockedInPreview allows only partial read-only tabs until fully unlocked', () => {
+  assert.equal(isModuleUnlockedInPreview('admin', 'dashboard', false), true);
+  assert.equal(isModuleUnlockedInPreview('admin', 'leads', false), true);
+  assert.equal(isModuleUnlockedInPreview('admin', 'quotes', false), true);
+  assert.equal(isModuleUnlockedInPreview('admin', 'invoices', false), false);
+  assert.equal(isModuleUnlockedInPreview('admin', 'social', false), false);
+  assert.equal(isModuleUnlockedInPreview('admin', 'backup', false), false);
+  assert.equal(isModuleUnlockedInPreview('admin', 'social', true), true);
+
+  assert.equal(isModuleUnlockedInPreview('app', 'tournee', false), true);
+  assert.equal(isModuleUnlockedInPreview('app', 'releve', false), true);
+  assert.equal(isModuleUnlockedInPreview('app', 'express', false), false);
+  assert.equal(isModuleUnlockedInPreview('app', 'clients', false), false);
+  assert.equal(isModuleUnlockedInPreview('app', 'express', true), true);
 });

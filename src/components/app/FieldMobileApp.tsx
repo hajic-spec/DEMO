@@ -29,9 +29,13 @@ import {
   formatEuro,
   formatWhatsAppUrl,
 } from '../../utils/business';
-import { hasSessionUnlock, isPaidLicenseActive } from '../../utils/accessControl';
+import {
+  hasSessionUnlock,
+  isModuleUnlockedInPreview,
+  isPaidLicenseActive,
+} from '../../utils/accessControl';
 import { appendLeadToStore, loadAdminStore, saveAdminStore } from '../../utils/storage';
-import { ActivationLockScreen } from '../ActivationLockScreen';
+import { ModulePreviewLock, PreviewBanner, UnlockLicenseModal } from '../PreviewBanner';
 import { ReliefEmblem } from '../ReliefLogo';
 import { FieldClientsView } from './FieldClientsView';
 import { FieldExpressQuoteView } from './FieldExpressQuoteView';
@@ -62,6 +66,8 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   const [unlocked, setUnlocked] = useState<boolean>(
     () => isPaidLicenseActive() || hasSessionUnlock('app')
   );
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockReason, setUnlockReason] = useState<string | null>(null);
   const [store, setStore] = useState<AdminStore>(() => loadAdminStore());
   const [fieldLogs, setFieldLogs] = useState<FieldVisitLog[]>(() => loadFieldLogs());
   const [appMode, setAppMode] = useState<AppMode>('terrain');
@@ -204,7 +210,21 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
     [expressPreviewQuote]
   );
 
+  const requireFullUnlock = (reason: string): boolean => {
+    if (unlocked) return true;
+    setUnlockReason(reason);
+    setShowUnlockModal(true);
+    return false;
+  };
+
   const handleToggleEventDone = (eventId: string) => {
+    if (
+      !requireFullUnlock(
+        'La validation des interventions et la synchronisation avec /admin sont activées après souscription (Formule 06).'
+      )
+    ) {
+      return;
+    }
     const updatedEvents = store.events.map((ev) =>
       ev.id === eventId ? { ...ev, completed: !ev.completed } : ev
     );
@@ -213,6 +233,13 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   };
 
   const handleSaveTimerToLog = () => {
+    if (
+      !requireFullUnlock(
+        'L’enregistrement des temps chronométrés dans le carnet chantier est réservé aux comptes activés.'
+      )
+    ) {
+      return;
+    }
     const activeEvent = store.events.find((e) => e.id === activeEventId) || store.events[0];
     if (!activeEvent || elapsedSeconds < 1) return;
     const matchingClient = store.clients.find((c) => c.name === activeEvent.clientName);
@@ -239,6 +266,13 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   };
 
   const handleSaveFieldSurvey = () => {
+    if (
+      !requireFullUnlock(
+        'La sauvegarde des relevés oliviers et audits OLD 06 est verrouillée en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     if (!selectedSurveyClient) return;
     const newLog: FieldVisitLog = {
       id: 'log-' + Date.now(),
@@ -276,6 +310,13 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   };
 
   const handleDeleteLog = (logId: string) => {
+    if (
+      !requireFullUnlock(
+        'La modification de l’historique terrain est désactivée en prévisualisation partielle.'
+      )
+    ) {
+      return;
+    }
     const nextLogs = fieldLogs.filter((l) => l.id !== logId);
     setFieldLogs(nextLogs);
     saveFieldLogs(nextLogs);
@@ -283,6 +324,13 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   };
 
   const handleSaveExpressQuote = (alsoOpenWhatsApp: boolean) => {
+    if (
+      !requireFullUnlock(
+        'Le générateur de Devis Express sur place et l’envoi WhatsApp sont activés après souscription.'
+      )
+    ) {
+      return;
+    }
     if (!expressName.trim()) {
       showFeedback('Veuillez saisir le nom du client pour enregistrer le devis.');
       return;
@@ -317,6 +365,13 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   };
 
   const handleOwnerAcceptQuote = (quoteId: string) => {
+    if (
+      !requireFullUnlock(
+        'L’acceptation client en 1 clic et la notification vers /admin nécessitent une licence active.'
+      )
+    ) {
+      return;
+    }
     const target = store.quotes.find((q) => q.id === quoteId);
     if (!target) return;
     const updatedQuotes = store.quotes.map((q) =>
@@ -329,6 +384,13 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   };
 
   const handleOwnerRequestAlert = (serviceTitle: string, alertTitle: string) => {
+    if (
+      !requireFullUnlock(
+        'L’envoi de demandes saisonnières depuis le Carnet Propriétaire nécessite une licence active.'
+      )
+    ) {
+      return;
+    }
     const activeClient: ClientProperty | undefined =
       ownerNameFilter === 'all'
         ? store.clients[0]
@@ -350,16 +412,6 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
     () => getSeasonalAlertsForMonth(new Date().getMonth() + 1),
     []
   );
-
-  if (!unlocked) {
-    return (
-      <ActivationLockScreen
-        area="app"
-        onUnlock={() => setUnlocked(true)}
-        onBackToSite={onBackToSite}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#1A211D] flex flex-col pb-20 lg:pb-10 overflow-x-hidden">
@@ -399,6 +451,17 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
       </header>
 
       <OfflineIndicator />
+
+      {!unlocked && (
+        <PreviewBanner
+          area="app"
+          onRequestUnlock={() => {
+            setUnlockReason(null);
+            setShowUnlockModal(true);
+          }}
+          onBackToSite={onBackToSite}
+        />
+      )}
 
       {/* Main Responsive Workspace */}
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-8 pt-4 md:pt-7">
@@ -516,6 +579,7 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
               ).map((tab) => {
                 const Icon = tab.icon;
                 const active = terrainTab === tab.id;
+                const tabUnlocked = isModuleUnlockedInPreview('app', tab.id, unlocked);
                 return (
                   <button
                     key={tab.id}
@@ -529,6 +593,12 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
                   >
                     <Icon className="w-4 h-4" />
                     <span>{tab.label}</span>
+                    {!tabUnlocked && (
+                      <Lock
+                        aria-label="Verrouillé en prévisualisation"
+                        className={`w-3.5 h-3.5 ${active ? 'text-[#CFA75B]' : 'text-[#9C7228]'}`}
+                      />
+                    )}
                   </button>
                 );
               })}
@@ -550,6 +620,11 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
                 }}
                 onSaveTimerToLog={handleSaveTimerToLog}
                 onToggleEventDone={handleToggleEventDone}
+                isPreviewOnly={!unlocked}
+                onRequireUnlock={(reason) => {
+                  setUnlockReason(reason);
+                  setShowUnlockModal(true);
+                }}
               />
             )}
 
@@ -578,44 +653,80 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
               />
             )}
 
-            {terrainTab === 'express' && (
-              <FieldExpressQuoteView
-                clients={store.clients}
-                expressClientId={expressClientId}
-                onSelectExpressClient={handleSelectExpressClient}
-                expressName={expressName}
-                onChangeExpressName={setExpressName}
-                expressPhone={expressPhone}
-                onChangeExpressPhone={setExpressPhone}
-                expressCity={expressCity}
-                onChangeExpressCity={setExpressCity}
-                expressOlives={expressOlives}
-                onChangeExpressOlives={setExpressOlives}
-                expressOldUnits={expressOldUnits}
-                onChangeExpressOldUnits={setExpressOldUnits}
-                expressIrrigationM={expressIrrigationM}
-                onChangeExpressIrrigationM={setExpressIrrigationM}
-                expressDebris={expressDebris}
-                onToggleExpressDebris={() => setExpressDebris((d) => !d)}
-                expressNotes={expressNotes}
-                onChangeExpressNotes={setExpressNotes}
-                expressPreviewQuote={expressPreviewQuote}
-                expressTotals={expressTotals}
-                onSaveExpressQuote={handleSaveExpressQuote}
-              />
-            )}
+            {terrainTab === 'express' &&
+              (isModuleUnlockedInPreview('app', 'express', unlocked) ? (
+                <FieldExpressQuoteView
+                  clients={store.clients}
+                  expressClientId={expressClientId}
+                  onSelectExpressClient={handleSelectExpressClient}
+                  expressName={expressName}
+                  onChangeExpressName={setExpressName}
+                  expressPhone={expressPhone}
+                  onChangeExpressPhone={setExpressPhone}
+                  expressCity={expressCity}
+                  onChangeExpressCity={setExpressCity}
+                  expressOlives={expressOlives}
+                  onChangeExpressOlives={setExpressOlives}
+                  expressOldUnits={expressOldUnits}
+                  onChangeExpressOldUnits={setExpressOldUnits}
+                  expressIrrigationM={expressIrrigationM}
+                  onChangeExpressIrrigationM={setExpressIrrigationM}
+                  expressDebris={expressDebris}
+                  onToggleExpressDebris={() => setExpressDebris((d) => !d)}
+                  expressNotes={expressNotes}
+                  onChangeExpressNotes={setExpressNotes}
+                  expressPreviewQuote={expressPreviewQuote}
+                  expressTotals={expressTotals}
+                  onSaveExpressQuote={handleSaveExpressQuote}
+                />
+              ) : (
+                <ModulePreviewLock
+                  title="Devis Express sur place & WhatsApp"
+                  description="Chiffrez une taille d’oliviers, un débroussaillement OLD 06 ou un réseau d’arrosage en 30 secondes devant le client, puis générez et envoyez le devis directement."
+                  requiredFormula="Formule 06 · Appli Terrain"
+                  highlights={[
+                    'Calcul HT / TTC automatique sur le terrain',
+                    'Synchronisation immédiate avec /admin',
+                    'Envoi WhatsApp pré-rempli en 1 clic',
+                    'Fonctionnement hors-ligne en restanques',
+                  ]}
+                  onRequestUnlock={() => {
+                    setUnlockReason(null);
+                    setShowUnlockModal(true);
+                  }}
+                  onBackToSite={onBackToSite}
+                />
+              ))}
 
-            {terrainTab === 'clients' && (
-              <FieldClientsView
-                clients={store.clients}
-                clientQuery={clientQuery}
-                onChangeClientQuery={setClientQuery}
-                onOpenSurveyForClient={(clientId) => {
-                  handleSelectSurveyClient(clientId);
-                  setTerrainTab('releve');
-                }}
-              />
-            )}
+            {terrainTab === 'clients' &&
+              (isModuleUnlockedInPreview('app', 'clients', unlocked) ? (
+                <FieldClientsView
+                  clients={store.clients}
+                  clientQuery={clientQuery}
+                  onChangeClientQuery={setClientQuery}
+                  onOpenSurveyForClient={(clientId) => {
+                    handleSelectSurveyClient(clientId);
+                    setTerrainTab('releve');
+                  }}
+                />
+              ) : (
+                <ModulePreviewLock
+                  title="Fiches Terrains, Codes Portail & Accès"
+                  description="Retrouvez en un geste l’historique de chaque propriété, les codes d’accès portail, le déclenchement GPS Google Maps et l’appel direct propriétaire."
+                  requiredFormula="Formule 06 · Appli Terrain"
+                  highlights={[
+                    'Recherche rapide par commune ou propriétaire',
+                    'Codes portail et consignes de sécurité',
+                    'Itinéraire GPS + appel / WhatsApp direct',
+                    'Passage immédiat vers un nouveau relevé',
+                  ]}
+                  onRequestUnlock={() => {
+                    setUnlockReason(null);
+                    setShowUnlockModal(true);
+                  }}
+                  onBackToSite={onBackToSite}
+                />
+              ))}
           </>
         ) : (
           <OwnerPortalView
@@ -648,21 +759,46 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
           ).map((tab) => {
             const Icon = tab.icon;
             const active = terrainTab === tab.id;
+            const tabUnlocked = isModuleUnlockedInPreview('app', tab.id, unlocked);
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setTerrainTab(tab.id)}
-                className={`min-h-[44px] flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${
+                className={`min-h-[44px] relative flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${
                   active ? 'text-[#CFA75B]' : 'text-[#FAF8F3]/70'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <span className="relative inline-flex">
+                  <Icon className="w-5 h-5" />
+                  {!tabUnlocked && (
+                    <Lock
+                      aria-label="Verrouillé en prévisualisation"
+                      className="w-2.5 h-2.5 text-[#CFA75B] absolute -top-1 -right-1.5"
+                    />
+                  )}
+                </span>
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </nav>
+      )}
+      {showUnlockModal && (
+        <UnlockLicenseModal
+          area="app"
+          reason={unlockReason}
+          onUnlocked={() => {
+            setUnlocked(true);
+            setShowUnlockModal(false);
+            setUnlockReason(null);
+          }}
+          onClose={() => {
+            setShowUnlockModal(false);
+            setUnlockReason(null);
+          }}
+          onBackToSite={onBackToSite}
+        />
       )}
     </div>
   );

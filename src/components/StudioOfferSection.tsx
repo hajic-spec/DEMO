@@ -93,7 +93,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
               className="min-h-[44px] inline-flex items-center justify-center gap-1 px-3 rounded-lg bg-[#9C7228] text-white text-xs md:text-sm font-semibold hover:bg-[#0E281B] transition-colors whitespace-nowrap"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Accès /admin</span>
+              <span>Aperçu /admin</span>
             </button>
           </div>
         );
@@ -112,7 +112,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
               className="min-h-[44px] inline-flex items-center justify-center gap-1 px-3 rounded-lg bg-[#0E281B] text-[#EBD9B3] text-xs md:text-sm font-semibold hover:bg-[#9C7228] hover:text-white transition-colors whitespace-nowrap"
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Accès /app</span>
+              <span>Aperçu /app</span>
             </button>
           </div>
         );
@@ -235,7 +235,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
               className="min-h-[44px] inline-flex items-center gap-2 px-4 rounded-lg border border-[#0E281B] bg-white text-[#0E281B] text-sm font-semibold hover:bg-[#0E281B] hover:text-white transition-colors whitespace-nowrap shrink-0"
             >
               <Lock className="w-4 h-4" />
-              <span>Accès /admin</span>
+              <span>Aperçu /admin</span>
             </button>
             <button
               type="button"
@@ -243,7 +243,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
               className="min-h-[44px] inline-flex items-center gap-2 px-5 rounded-lg bg-[#0E281B] text-[#EBD9B3] text-sm font-semibold hover:bg-[#9C7228] hover:text-white transition-colors whitespace-nowrap shrink-0"
             >
               <Smartphone className="w-4 h-4" />
-              <span>Aperçu /app (verrouillé)</span>
+              <span>Aperçu partiel /app</span>
               <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>
@@ -416,7 +416,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
                   className="min-h-[48px] px-6 rounded-lg bg-[#CFA75B] text-[#091B12] text-sm font-bold hover:bg-[#EBD9B3] transition-colors inline-flex items-center gap-2 whitespace-nowrap"
                 >
                   <Lock className="w-4 h-4" />
-                  <span>Appli /app (sur activation)</span>
+                  <span>Aperçu partiel /app</span>
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
                 <button
@@ -425,7 +425,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
                   className="min-h-[48px] px-5 rounded-lg border border-white/25 bg-white/10 text-white text-sm font-semibold hover:bg-white/20 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
                 >
                   <Lock className="w-4 h-4 text-[#CFA75B]" />
-                  <span>Portail /admin (sur activation)</span>
+                  <span>Aperçu partiel /admin</span>
                 </button>
               </div>
             </div>
