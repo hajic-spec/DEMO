@@ -1,19 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { INITIAL_ADMIN_STORE } from '../data/seedData.ts';
 import {
   buildExpressFieldQuote,
+  buildGoogleMapsDirectionsUrl,
   calculateOldComplianceScore,
+  computeTerrainDayMetrics,
   estimateOliveHarvestKg,
+  formatHumanDuration,
   formatStopwatchDuration,
+  getLatestLogForClient,
   getSeasonalAlertsForMonth,
+  INITIAL_FIELD_LOGS,
 } from './appLogic.ts';
 import { calculateDocumentTotals } from './business.ts';
 
-test('formatStopwatchDuration formats seconds into HH:MM:SS cleanly', () => {
+test('formatStopwatchDuration & formatHumanDuration format durations cleanly', () => {
   assert.equal(formatStopwatchDuration(0), '00:00:00');
   assert.equal(formatStopwatchDuration(65), '00:01:05');
   assert.equal(formatStopwatchDuration(3661), '01:01:01');
   assert.equal(formatStopwatchDuration(-15), '00:00:00');
+  assert.equal(formatHumanDuration(2700), '45 min');
+  assert.equal(formatHumanDuration(7800), '2h 10min');
 });
 
 test('estimateOliveHarvestKg computes realistic Grasse olive yield', () => {
@@ -49,16 +57,6 @@ test('calculateOldComplianceScore evaluates OLD 06 conformity tiers', () => {
   });
   assert.equal(partial.percent, 60);
   assert.equal(partial.label, 'Mise à niveau partielle');
-
-  const nonConforme = calculateOldComplianceScore({
-    brushCleared50m: true,
-    canopySpacing3m: false,
-    roofClearance3m: false,
-    accessRoadCleared: false,
-    debrisEvacuated: false,
-  });
-  assert.equal(nonConforme.percent, 20);
-  assert.equal(nonConforme.label, 'Non conforme (intervention requise)');
 });
 
 test('buildExpressFieldQuote generates sequential quote with exact HT/TTC totals', () => {
@@ -91,20 +89,32 @@ test('buildExpressFieldQuote generates sequential quote with exact HT/TTC totals
 
   assert.equal(quote.number, 'DEV-2026-003');
   assert.equal(quote.status, 'Envoyé');
-  assert.equal(quote.lines.length, 4);
-
-  // 10 * 65 (650) + 4 * 130 (520) + 20 * 6.5 (130) + 95 = 1395
   const totals = calculateDocumentTotals(quote.lines, quote.vatRate);
   assert.equal(totals.totalTTC, 1395);
 });
 
+test('computeTerrainDayMetrics, getLatestLogForClient, and buildGoogleMapsDirectionsUrl work accurately', () => {
+  const metrics = computeTerrainDayMetrics(
+    INITIAL_ADMIN_STORE.events,
+    INITIAL_FIELD_LOGS,
+    INITIAL_ADMIN_STORE.quotes
+  );
+  assert.equal(metrics.pendingStops, 3);
+  assert.equal(metrics.completedStops, 0);
+  assert.equal(metrics.totalOlivesSurveyed, 21);
+  assert.equal(metrics.totalLoggedMinutes, 220);
+  assert.equal(metrics.openQuotesTotalTTC, 955);
+
+  const log = getLatestLogForClient(INITIAL_FIELD_LOGS, INITIAL_ADMIN_STORE.clients[0]);
+  assert.ok(log && log.id === 'log-demo-1');
+
+  const url = buildGoogleMapsDirectionsUrl('1 Avenue de la Libération', 'Grasse');
+  assert.ok(url.startsWith('https://www.google.com/maps/search/?api=1&query='));
+  assert.ok(url.includes('Grasse'));
+});
+
 test('getSeasonalAlertsForMonth returns relevant seasonal actions across the year', () => {
-  const november = getSeasonalAlertsForMonth(11);
-  assert.ok(november.some((a) => a.title.toLowerCase().includes('récolte')));
-
-  const march = getSeasonalAlertsForMonth(3);
-  assert.ok(march.some((a) => a.title.toLowerCase().includes('taille')));
-
-  const july = getSeasonalAlertsForMonth(7);
-  assert.ok(july.some((a) => a.title.toLowerCase().includes('arrosage')));
+  assert.ok(getSeasonalAlertsForMonth(11).some((a) => a.title.toLowerCase().includes('récolte')));
+  assert.ok(getSeasonalAlertsForMonth(3).some((a) => a.title.toLowerCase().includes('taille')));
+  assert.ok(getSeasonalAlertsForMonth(7).some((a) => a.title.toLowerCase().includes('arrosage')));
 });

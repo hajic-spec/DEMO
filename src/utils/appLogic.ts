@@ -1,5 +1,5 @@
-import type { Quote, QuoteLine } from '../types/relief';
-import { nextSequentialNumber } from './business';
+import type { ClientProperty, PlanningEvent, Quote, QuoteLine } from '../types/relief';
+import { calculateDocumentTotals, nextSequentialNumber } from './business';
 
 export type AppMode = 'terrain' | 'client';
 
@@ -71,6 +71,14 @@ export function formatStopwatchDuration(totalSeconds: number): string {
   const minutes = Math.floor((safe % 3600) / 60);
   const seconds = safe % 60;
   return [hours, minutes, seconds].map((v) => String(v).padStart(2, '0')).join(':');
+}
+
+export function formatHumanDuration(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(Number.isFinite(totalSeconds) ? totalSeconds : 0));
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  if (hours === 0) return `${minutes} min`;
+  return `${hours}h ${String(minutes).padStart(2, '0')}min`;
 }
 
 export function estimateOliveHarvestKg(
@@ -283,6 +291,51 @@ export function getSeasonalAlertsForMonth(month1To12: number): SeasonalAlert[] {
       recommendedService: 'Entretien de parc et jardin',
     },
   ];
+}
+
+export function computeTerrainDayMetrics(
+  events: PlanningEvent[],
+  fieldLogs: FieldVisitLog[],
+  quotes: Quote[]
+): {
+  pendingStops: number;
+  completedStops: number;
+  totalOlivesSurveyed: number;
+  totalLoggedMinutes: number;
+  openQuotesTotalTTC: number;
+} {
+  const pendingStops = events.filter((e) => !e.completed).length;
+  const completedStops = events.filter((e) => e.completed).length;
+  const totalOlivesSurveyed = fieldLogs.reduce((sum, l) => sum + (l.oliveTreesPruned || 0), 0);
+  const totalLoggedSeconds = fieldLogs.reduce((sum, l) => sum + (l.durationSeconds || 0), 0);
+  const totalLoggedMinutes = Math.round(totalLoggedSeconds / 60);
+  const openQuotesTotalTTC = quotes
+    .filter((q) => q.status === 'Envoyé' || q.status === 'Brouillon')
+    .reduce((sum, q) => sum + calculateDocumentTotals(q.lines, q.vatRate).totalTTC, 0);
+
+  return {
+    pendingStops,
+    completedStops,
+    totalOlivesSurveyed,
+    totalLoggedMinutes,
+    openQuotesTotalTTC,
+  };
+}
+
+export function getLatestLogForClient(
+  fieldLogs: FieldVisitLog[],
+  client: Pick<ClientProperty, 'id' | 'name'>
+): FieldVisitLog | null {
+  return (
+    fieldLogs.find((l) => l.clientId === client.id || l.clientName === client.name) || null
+  );
+}
+
+export function buildGoogleMapsDirectionsUrl(address: string, city: string): string {
+  const query = [address.trim(), city.trim(), 'Alpes-Maritimes France']
+    .filter(Boolean)
+    .join(', ');
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 export function loadFieldLogs(): FieldVisitLog[] {

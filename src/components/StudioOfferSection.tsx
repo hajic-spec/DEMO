@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { Lock, Phone, ArrowUpRight, EyeOff, Smartphone } from 'lucide-react';
-import { COMPANY_INFO, STUDIO_OFFERS } from '../data/seedData';
+import {
+  ArrowUpRight,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  EyeOff,
+  Lock,
+  Phone,
+  Smartphone,
+} from 'lucide-react';
+import {
+  COMPANY_INFO,
+  OFFER_COMPARISON_MATRIX,
+  OFFER_SCENARIOS,
+  STUDIO_OFFERS,
+} from '../data/seedData';
 import type { BillingMode } from '../types/relief';
 
 interface StudioOfferSectionProps {
@@ -14,11 +28,15 @@ const BILLING_NOTES: Record<BillingMode, string> = {
   sub: 'Abonnement mensuel tout inclus (hébergement, suivi technique et mises à jour incluses).',
 };
 
+type ScenarioId = (typeof OFFER_SCENARIOS)[number]['id'];
+
 export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
   onOpenAdmin,
   onOpenApp,
 }) => {
   const [billingMode, setBillingMode] = useState<BillingMode>('once');
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioId | null>(null);
+  const [showMatrix, setShowMatrix] = useState<boolean>(true);
   const [hiddenForClientPreview, setHiddenForClientPreview] = useState(false);
 
   if (hiddenForClientPreview) {
@@ -35,30 +53,170 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
     );
   }
 
+  const activeScenario = OFFER_SCENARIOS.find((s) => s.id === selectedScenario) || null;
+  const recommendedSet = new Set<string>(activeScenario ? activeScenario.recommendedIds : []);
+
+  const tierOneOffers = STUDIO_OFFERS.slice(0, 3);
+  const tierTwoOffers = STUDIO_OFFERS.slice(3, 5);
+  const flagshipOffer = STUDIO_OFFERS[5];
+
+  const renderOfferActions = (offerId: string) => {
+    switch (offerId) {
+      case 'formule-01':
+        return (
+          <a
+            href="#top"
+            className="w-full min-h-[44px] inline-flex items-center justify-center px-4 rounded-lg border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors"
+          >
+            Voir la vitrine 360 € ci-dessus
+          </a>
+        );
+      case 'formule-02':
+        return (
+          <a
+            href={COMPANY_INFO.advisorPhoneHref}
+            className="w-full min-h-[44px] inline-flex items-center justify-center px-4 rounded-lg bg-[#9C7228] text-white text-xs md:text-sm font-semibold hover:bg-[#0E281B] transition-colors"
+          >
+            Échanger sur la Formule 02
+          </a>
+        );
+      case 'formule-03':
+      case 'formule-04':
+        return (
+          <div className="grid grid-cols-2 gap-2.5">
+            <a
+              href="#contact"
+              className="min-h-[44px] inline-flex items-center justify-center px-3 rounded-lg border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors whitespace-nowrap"
+            >
+              {offerId === 'formule-03' ? 'Tester demande' : 'Tester pré-devis'}
+            </a>
+            <button
+              type="button"
+              onClick={onOpenAdmin}
+              className="min-h-[44px] inline-flex items-center justify-center gap-1 px-3 rounded-lg bg-[#9C7228] text-white text-xs md:text-sm font-semibold hover:bg-[#0E281B] transition-colors whitespace-nowrap"
+            >
+              <span>Ouvrir /admin</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        );
+      case 'formule-05':
+        return (
+          <div className="grid grid-cols-2 gap-2.5">
+            <a
+              href={COMPANY_INFO.advisorPhoneHref}
+              className="min-h-[44px] inline-flex items-center justify-center px-3 rounded-lg border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors whitespace-nowrap"
+            >
+              Étude portail
+            </a>
+            <button
+              type="button"
+              onClick={onOpenApp}
+              className="min-h-[44px] inline-flex items-center justify-center gap-1 px-3 rounded-lg bg-[#0E281B] text-[#EBD9B3] text-xs md:text-sm font-semibold hover:bg-[#9C7228] hover:text-white transition-colors whitespace-nowrap"
+            >
+              <span>Vue client /app</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderStandardCard = (offer: (typeof STUDIO_OFFERS)[number]) => {
+    const activePrice = offer.prices[billingMode];
+    const isRecommended = recommendedSet.has(offer.id);
+    const isDimmed = Boolean(activeScenario && !isRecommended);
+
+    return (
+      <article
+        key={offer.id}
+        className={`rounded-xl p-6 md:p-7 flex flex-col justify-between transition-all duration-200 ${
+          isRecommended
+            ? 'bg-white border-2 border-[#B5893A] shadow-lg'
+            : isDimmed
+              ? 'bg-white/80 border border-[#E5DEC9] opacity-70 hover:opacity-100'
+              : 'bg-white border border-[#E5DEC9] hover:border-[#B5893A]/70'
+        }`}
+      >
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9C7228] truncate">
+              {offer.kicker}
+            </p>
+            {isRecommended && (
+              <span className="text-[11px] font-mono font-semibold text-[#1E6B43] shrink-0">
+                Recommandée
+              </span>
+            )}
+          </div>
+
+          <h3 className="font-serif text-2xl font-semibold text-[#0E281B] leading-snug mb-2">
+            {offer.title}
+          </h3>
+
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 mb-1">
+            <span className="font-serif text-3xl font-bold text-[#9C7228] tabular-nums whitespace-nowrap">
+              {activePrice.main}
+            </span>
+            <span className="text-xs font-semibold text-[#3E4A43] tabular-nums">
+              {activePrice.sub}
+            </span>
+          </div>
+          <p className="text-xs text-[#647068] pb-4 mb-4 border-b border-[#E5DEC9]">
+            {activePrice.tag}
+          </p>
+
+          <p className="text-sm text-[#3E4A43] leading-relaxed mb-5">{offer.description}</p>
+
+          <ul className="space-y-2.5 mb-6">
+            {offer.features.map((feat) => (
+              <li
+                key={feat}
+                className="text-sm text-[#3E4A43] flex items-start gap-2.5 leading-snug"
+              >
+                <Check className="w-4 h-4 text-[#9C7228] shrink-0 mt-0.5" />
+                <span>{feat}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="pt-4 border-t border-[#E5DEC9]">
+          <p className="text-xs text-[#647068] mb-3">{offer.footNote}</p>
+          {renderOfferActions(offer.id)}
+        </div>
+      </article>
+    );
+  };
+
+  const flagshipPrice = flagshipOffer.prices[billingMode];
+  const flagshipRecommended = recommendedSet.has(flagshipOffer.id);
+
   return (
     <section
       id="offre-studio"
-      className="bg-[#F3EFE5] border-t border-[#E5DEC9] py-20 md:py-24"
+      className="scroll-mt-20 bg-[#F3EFE5] border-t border-[#E5DEC9] py-20 md:py-24"
     >
       <div className="max-w-[1240px] mx-auto px-5 md:px-10">
-        {/* En-tête proposition commerciale */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+        {/* En-tête proposition éditorial unique (sans double bannière redondante) */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 pb-8 border-b border-[#E5DEC9]">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9C7228] mb-2">
-              Proposition Studio CS Numérique · 6 Formules · Achat, 3× ou Abonnement
+              Proposition Studio CS Numérique · 6 Paliers évolutifs
             </p>
             <h2 className="font-serif text-3xl md:text-5xl font-semibold text-[#0E281B] leading-tight mb-3 text-balance">
-              Votre écosystème digital : vitrine, portail /admin &amp; appli mobile /app
+              Votre écosystème digital : de la vitrine locale à l’application terrain
             </h2>
             <p className="text-[#3E4A43] text-base leading-relaxed">
               De la base <strong className="text-[#0E281B]">Formule 01 à 360 €</strong> jusqu’à
-              l’<strong className="text-[#0E281B]">Application Terrain &amp; Client (PWA)</strong>{' '}
-              en Formule 06, chaque palier s’adapte à votre rythme de développement. Testez dès
-              maintenant l’espace{' '}
+              l’<strong className="text-[#0E281B]">Application Terrain &amp; Client (PWA)</strong>,
+              testez en direct votre espace de gestion{' '}
               <code className="font-mono text-sm bg-[#E5DEC9] px-1.5 py-0.5 rounded text-[#0E281B]">
                 /admin
               </code>{' '}
-              et la première version de l’application{' '}
+              et votre application mobile{' '}
               <code className="font-mono text-sm bg-[#E5DEC9] px-1.5 py-0.5 rounded text-[#0E281B]">
                 /app
               </code>
@@ -69,7 +227,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <a
               href={COMPANY_INFO.advisorPhoneHref}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded border border-[#E5DEC9] bg-white text-sm font-semibold text-[#0E281B] hover:border-[#B5893A] transition-colors whitespace-nowrap shrink-0"
+              className="min-h-[44px] inline-flex items-center gap-2 px-4 rounded-lg border border-[#E5DEC9] bg-white text-sm font-semibold text-[#0E281B] hover:border-[#B5893A] transition-colors whitespace-nowrap shrink-0"
             >
               <Phone className="w-4 h-4 text-[#9C7228]" />
               <span>Conseiller : {COMPANY_INFO.advisorPhoneDisplay}</span>
@@ -77,64 +235,15 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
             <button
               type="button"
               onClick={onOpenAdmin}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded border border-[#0E281B] bg-white text-[#0E281B] text-sm font-semibold hover:bg-[#0E281B] hover:text-white transition-colors whitespace-nowrap shrink-0"
+              className="min-h-[44px] inline-flex items-center gap-2 px-4 rounded-lg border border-[#0E281B] bg-white text-[#0E281B] text-sm font-semibold hover:bg-[#0E281B] hover:text-white transition-colors whitespace-nowrap shrink-0"
             >
               <Lock className="w-4 h-4" />
-              <span>Portail /admin</span>
-            </button>
-            <button
-              type="button"
-              onClick={onOpenApp}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-[#9C7228] text-white text-sm font-semibold hover:bg-[#0E281B] transition-colors whitespace-nowrap shrink-0"
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>Tester l’Appli /app</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Bannière double démonstration /admin + /app */}
-        <div className="bg-gradient-to-br from-[#091B12] via-[#0E281B] to-[#163B29] text-white rounded-xl p-6 md:p-8 border border-[#CFA75B]/35 mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#CFA75B] mb-1.5">
-              Déjà testable en direct · Formules 03 à 06
-            </p>
-            <h3 className="font-serif text-2xl md:text-3xl font-semibold text-white mb-2">
-              Portail bureau{' '}
-              <code className="font-mono text-xl bg-white/10 px-2 py-0.5 rounded text-[#EBD9B3]">
-                /admin
-              </code>{' '}
-              &amp; Application Mobile{' '}
-              <code className="font-mono text-xl bg-white/10 px-2 py-0.5 rounded text-[#EBD9B3]">
-                /app
-              </code>
-            </h3>
-            <p className="text-sm md:text-base text-[#FAF8F3]/85 leading-relaxed">
-              Pilotez devis PDF, factures et planning depuis{' '}
-              <code className="font-mono text-xs bg-white/10 px-1.5 py-0.5 rounded text-[#EBD9B3]">
-                /admin
-              </code>
-              , puis passez sur{' '}
-              <code className="font-mono text-xs bg-white/10 px-1.5 py-0.5 rounded text-[#EBD9B3]">
-                /app
-              </code>{' '}
-              pour le mode terrain (chrono, taille d’oliviers, checklist OLD 06, devis express sur
-              place) et l’espace propriétaire.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={onOpenAdmin}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded border border-white/25 bg-white/10 text-white text-sm font-semibold hover:bg-white/20 transition-colors whitespace-nowrap shrink-0"
-            >
               <span>Ouvrir /admin</span>
-              <ArrowUpRight className="w-4 h-4" />
             </button>
             <button
               type="button"
               onClick={onOpenApp}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded bg-[#CFA75B] text-[#091B12] text-sm font-bold hover:bg-[#EBD9B3] transition-colors whitespace-nowrap shrink-0"
+              className="min-h-[44px] inline-flex items-center gap-2 px-5 rounded-lg bg-[#0E281B] text-[#EBD9B3] text-sm font-semibold hover:bg-[#9C7228] hover:text-white transition-colors whitespace-nowrap shrink-0"
             >
               <Smartphone className="w-4 h-4" />
               <span>Lancer l’Appli /app</span>
@@ -143,11 +252,70 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
           </div>
         </div>
 
+        {/* Sélecteur de besoin (Scenario Matcher) */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0E281B]">
+              1. Quelle est votre priorité aujourd’hui ?
+            </p>
+            {activeScenario && (
+              <button
+                type="button"
+                onClick={() => setSelectedScenario(null)}
+                className="text-xs font-semibold text-[#9C7228] hover:text-[#0E281B] underline underline-offset-4"
+              >
+                Afficher toutes les formules sans filtre
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {OFFER_SCENARIOS.map((scenario) => {
+              const active = selectedScenario === scenario.id;
+              return (
+                <button
+                  key={scenario.id}
+                  type="button"
+                  onClick={() =>
+                    setSelectedScenario((prev) => (prev === scenario.id ? null : scenario.id))
+                  }
+                  aria-pressed={active}
+                  className={`text-left rounded-xl p-4 border transition-all ${
+                    active
+                      ? 'bg-[#0E281B] border-[#0E281B] text-[#FAF8F3] shadow-md'
+                      : 'bg-white border-[#E5DEC9] text-[#0E281B] hover:border-[#B5893A]'
+                  }`}
+                >
+                  <p
+                    className={`text-[11px] font-mono uppercase tracking-[0.12em] mb-1 ${
+                      active ? 'text-[#CFA75B]' : 'text-[#9C7228]'
+                    }`}
+                  >
+                    {scenario.recommendedIds
+                      .map((id) => id.replace('formule-', 'Formule '))
+                      .join(' · ')}
+                  </p>
+                  <p className="font-serif text-xl font-semibold leading-snug">
+                    {scenario.label}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          {activeScenario && (
+            <div className="mt-3 bg-white border border-[#B5893A]/50 rounded-xl px-4 py-3 text-sm text-[#3E4A43]">
+              <strong className="text-[#0E281B]">Recommandation ciblée :</strong>{' '}
+              {activeScenario.summary}
+            </div>
+          )}
+        </div>
+
         {/* Sélecteur 3 modes de financement */}
         <div className="bg-white border border-[#E5DEC9] rounded-xl p-4 md:px-6 md:py-4 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <strong className="block text-sm font-semibold text-[#0E281B]">
-              Mode de financement client (valable sur l’ensemble des 6 offres)
+              2. Mode de financement client (valable sur l’ensemble des 6 offres)
             </strong>
             <span className="text-sm text-[#647068]">{BILLING_NOTES[billingMode]}</span>
           </div>
@@ -170,7 +338,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
                 role="tab"
                 aria-selected={billingMode === mode.id}
                 onClick={() => setBillingMode(mode.id)}
-                className={`px-3.5 py-2 rounded-md text-xs md:text-sm font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                className={`min-h-[40px] px-3.5 rounded-md text-xs md:text-sm font-semibold transition-colors whitespace-nowrap shrink-0 ${
                   billingMode === mode.id
                     ? 'bg-[#0E281B] text-[#EBD9B3]'
                     : 'text-[#3E4A43] hover:text-[#0E281B]'
@@ -182,150 +350,215 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
           </div>
         </div>
 
-        {/* Grille symétrique 3 × 2 des 6 formules */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-          {STUDIO_OFFERS.map((offer) => {
-            const activePrice = offer.prices[billingMode];
-            return (
-              <article
-                key={offer.id}
-                className={`bg-white rounded-xl p-7 flex flex-col justify-between transition-transform duration-200 hover:-translate-y-1 ${
-                  offer.featured
-                    ? 'border-2 border-[#B5893A] shadow-lg'
-                    : 'border border-[#E5DEC9]'
-                }`}
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#647068] mb-2 whitespace-nowrap truncate">
-                    <span className={offer.featured ? 'text-[#9C7228]' : ''}>{offer.kicker}</span>
-                  </p>
-                  <div className="flex items-baseline justify-between gap-3 mb-2">
-                    <h3 className="font-serif text-2xl font-semibold text-[#0E281B] leading-snug">
-                      {offer.title}
-                    </h3>
-                    <span className="font-serif text-3xl font-bold text-[#9C7228] tabular-nums whitespace-nowrap shrink-0">
-                      {activePrice.main}
-                    </span>
-                  </div>
+        {/* Palier 1 : Formules 01, 02, 03 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-6">
+          {tierOneOffers.map(renderStandardCard)}
+        </div>
 
-                  <p className="text-xs font-semibold text-[#3E4A43] tabular-nums mb-0.5">
-                    {activePrice.sub}
-                  </p>
-                  <p className="text-xs text-[#647068] pb-4 mb-4 border-b border-[#E5DEC9]">
-                    {activePrice.tag}
-                  </p>
+        {/* Palier 2 : Formules 04, 05 (grille 2 colonnes symétrique sans carte orpheline) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch mb-6">
+          {tierTwoOffers.map(renderStandardCard)}
+        </div>
 
-                  <p className="text-sm text-[#3E4A43] leading-relaxed mb-5">
-                    {offer.description}
-                  </p>
+        {/* Palier 3 : Formule 06 Flagship Dark Forest & Or */}
+        <article
+          className={`bg-gradient-to-br from-[#091B12] via-[#0E281B] to-[#163B29] text-[#FAF8F3] rounded-2xl p-6 md:p-10 border transition-all ${
+            flagshipRecommended
+              ? 'border-2 border-[#CFA75B] shadow-2xl'
+              : activeScenario
+                ? 'border-[#CFA75B]/30 opacity-80 hover:opacity-100'
+                : 'border-[#CFA75B]/50 shadow-xl'
+          }`}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#CFA75B]">
+                  {flagshipOffer.kicker} · Dispositif Intégral
+                </p>
+                {flagshipRecommended && (
+                  <span className="text-xs font-mono font-semibold text-[#EBD9B3]">
+                    Recommandée pour votre objectif
+                  </span>
+                )}
+              </div>
 
-                  <ul className="space-y-2.5 mb-6">
-                    {offer.features.map((feat) => (
-                      <li
-                        key={feat}
-                        className="text-sm text-[#3E4A43] pl-4 relative before:content-['•'] before:absolute before:left-0 before:text-[#B5893A] before:font-bold"
+              <h3 className="font-serif text-3xl md:text-4xl font-semibold text-white leading-tight mb-2">
+                {flagshipOffer.title}
+              </h3>
+
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-1">
+                <span className="font-serif text-3xl md:text-4xl font-bold text-[#CFA75B] tabular-nums whitespace-nowrap">
+                  {flagshipPrice.main}
+                </span>
+                <span className="text-xs font-semibold text-[#EBD9B3] tabular-nums">
+                  {flagshipPrice.sub} · {flagshipPrice.tag}
+                </span>
+              </div>
+
+              <p className="text-sm md:text-base text-[#FAF8F3]/85 leading-relaxed mt-4 mb-5">
+                {flagshipOffer.description}
+              </p>
+
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                {flagshipOffer.features.map((feat) => (
+                  <li
+                    key={feat}
+                    className="text-sm text-[#FAF8F3]/90 flex items-start gap-2.5 leading-snug"
+                  >
+                    <Check className="w-4 h-4 text-[#CFA75B] shrink-0 mt-0.5" />
+                    <span>{feat}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onOpenApp}
+                  className="min-h-[48px] px-6 rounded-lg bg-[#CFA75B] text-[#091B12] text-sm font-bold hover:bg-[#EBD9B3] transition-colors inline-flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Tester l’Appli /app en direct</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenAdmin}
+                  className="min-h-[48px] px-5 rounded-lg border border-white/25 bg-white/10 text-white text-sm font-semibold hover:bg-white/20 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Lock className="w-4 h-4 text-[#CFA75B]" />
+                  <span>Ouvrir le Portail /admin</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Aperçu structuré des 4 modules embarqués dans /app */}
+            <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                {
+                  code: '01',
+                  title: 'Tournée, Chrono & GPS',
+                  desc: 'Chronomètre chantier sauvegardé dans les fiches + itinéraire Google Maps.',
+                },
+                {
+                  code: '02',
+                  title: 'Oliviers & Jauge OLD 06',
+                  desc: 'Compteur terrain, estimation récolte en kg et audit incendie 5 points.',
+                },
+                {
+                  code: '03',
+                  title: 'Devis Express sur place',
+                  desc: 'Chiffrage en 30 s synchronisé avec /admin et prêt à partir par WhatsApp.',
+                },
+                {
+                  code: '04',
+                  title: 'Carnet Propriétaire',
+                  desc: 'Santé du domaine, détail des prestations et accord client en 1 clic.',
+                },
+              ].map((mod) => (
+                <div
+                  key={mod.code}
+                  className="bg-white/[0.06] border border-[#CFA75B]/25 rounded-xl p-4"
+                >
+                  <p className="font-mono text-[11px] font-semibold text-[#CFA75B]">
+                    MODULE {mod.code}
+                  </p>
+                  <h4 className="font-serif text-lg font-semibold text-white mt-1">
+                    {mod.title}
+                  </h4>
+                  <p className="text-xs text-[#FAF8F3]/75 mt-1 leading-relaxed">{mod.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
+
+        {/* Matrice comparative interactive */}
+        <div className="mt-8 bg-white border border-[#E5DEC9] rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowMatrix((v) => !v)}
+            aria-expanded={showMatrix}
+            className="w-full px-5 md:px-6 py-4 flex items-center justify-between gap-4 text-left hover:bg-[#FAF8F3] transition-colors"
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9C7228]">
+                Comparatif technique
+              </p>
+              <h3 className="font-serif text-xl md:text-2xl font-semibold text-[#0E281B]">
+                Tableau comparatif des 6 formules
+              </h3>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0E281B] shrink-0">
+              <span>{showMatrix ? 'Masquer' : 'Afficher'}</span>
+              {showMatrix ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </span>
+          </button>
+
+          {showMatrix && (
+            <div className="overflow-x-auto border-t border-[#E5DEC9]">
+              <table className="w-full min-w-[760px] text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#FAF8F3] border-b border-[#E5DEC9] text-[11px] uppercase tracking-[0.1em] text-[#647068]">
+                    <th className="py-3 px-4 font-semibold">Capacité incluse</th>
+                    {STUDIO_OFFERS.map((o, idx) => (
+                      <th
+                        key={o.id}
+                        className={`py-3 px-3 font-semibold text-center ${
+                          idx === 5 ? 'text-[#0E281B] bg-[#EBD9B3]/35' : ''
+                        }`}
                       >
-                        {feat}
-                      </li>
+                        F0{idx + 1}
+                      </th>
                     ))}
-                  </ul>
-                </div>
-
-                <div className="pt-4 border-t border-[#E5DEC9]">
-                  <p className="text-xs text-[#647068] mb-3">{offer.footNote}</p>
-                  {offer.id === 'formule-01' && (
-                    <a
-                      href="#top"
-                      className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded border border-[#E5DEC9] bg-[#FAF8F3] text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors"
-                    >
-                      Voir la vitrine 360 € ci-dessus
-                    </a>
-                  )}
-                  {offer.id === 'formule-02' && (
-                    <a
-                      href={COMPANY_INFO.advisorPhoneHref}
-                      className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded bg-[#9C7228] text-white text-sm font-semibold hover:bg-[#0E281B] transition-colors"
-                    >
-                      Échanger sur la Formule 02
-                    </a>
-                  )}
-                  {offer.id === 'formule-03' && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <a
-                        href="#contact"
-                        className="inline-flex items-center justify-center px-3 py-2.5 rounded border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors whitespace-nowrap"
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E5DEC9] text-xs md:text-sm">
+                  {OFFER_COMPARISON_MATRIX.map((row) => (
+                    <tr key={row.feature} className="hover:bg-[#FAF8F3]/70">
+                      <td className="py-3 px-4 font-medium text-[#0E281B]">{row.feature}</td>
+                      {row.levels.map((val, idx) => (
+                        <td
+                          key={`${row.feature}-${idx}`}
+                          className={`py-3 px-3 text-center whitespace-nowrap tabular-nums ${
+                            val === '—'
+                              ? 'text-[#A0A8A3]'
+                              : idx === 5
+                                ? 'font-semibold text-[#0E281B] bg-[#EBD9B3]/20'
+                                : 'text-[#3E4A43] font-medium'
+                          }`}
+                        >
+                          {val}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className="bg-[#FAF8F3] border-t-2 border-[#E5DEC9]">
+                    <td className="py-3.5 px-4 font-semibold text-[#0E281B]">
+                      Tarif ({billingMode === 'once' ? '1×' : billingMode === 'three' ? '3×' : 'Mensuel'})
+                    </td>
+                    {STUDIO_OFFERS.map((o, idx) => (
+                      <td
+                        key={`price-${o.id}`}
+                        className={`py-3.5 px-3 text-center font-serif font-bold tabular-nums whitespace-nowrap ${
+                          idx === 5
+                            ? 'text-[#0E281B] bg-[#EBD9B3]/40 text-base'
+                            : 'text-[#9C7228]'
+                        }`}
                       >
-                        Tester demande
-                      </a>
-                      <button
-                        type="button"
-                        onClick={onOpenAdmin}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-2.5 rounded bg-[#9C7228] text-white text-xs md:text-sm font-semibold hover:bg-[#0E281B] transition-colors whitespace-nowrap"
-                      >
-                        <span>Ouvrir /admin</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                  {offer.id === 'formule-04' && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <a
-                        href="#contact"
-                        className="inline-flex items-center justify-center px-3 py-2.5 rounded border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors whitespace-nowrap"
-                      >
-                        Tester pré-devis
-                      </a>
-                      <button
-                        type="button"
-                        onClick={onOpenAdmin}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-2.5 rounded bg-[#9C7228] text-white text-xs md:text-sm font-semibold hover:bg-[#0E281B] transition-colors whitespace-nowrap"
-                      >
-                        <span>Ouvrir /admin</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                  {offer.id === 'formule-05' && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <a
-                        href={COMPANY_INFO.advisorPhoneHref}
-                        className="inline-flex items-center justify-center px-3 py-2.5 rounded border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors whitespace-nowrap"
-                      >
-                        Étude portail
-                      </a>
-                      <button
-                        type="button"
-                        onClick={onOpenApp}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-2.5 rounded bg-[#0E281B] text-[#EBD9B3] text-xs md:text-sm font-semibold hover:bg-[#9C7228] hover:text-white transition-colors whitespace-nowrap"
-                      >
-                        <span>Vue client /app</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                  {offer.id === 'formule-06' && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={onOpenAdmin}
-                        className="inline-flex items-center justify-center px-3 py-2.5 rounded border border-[#E5DEC9] bg-[#FAF8F3] text-xs md:text-sm font-semibold text-[#0E281B] hover:border-[#0E281B] transition-colors whitespace-nowrap"
-                      >
-                        Ouvrir /admin
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onOpenApp}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-2.5 rounded bg-[#9C7228] text-white text-xs md:text-sm font-semibold hover:bg-[#0E281B] transition-colors whitespace-nowrap"
-                      >
-                        <Smartphone className="w-3.5 h-3.5" />
-                        <span>Tester /app</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-          })}
+                        {o.prices[billingMode].main}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="mt-8 pt-5 border-t border-dashed border-[#E5DEC9] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#647068]">
@@ -336,7 +569,7 @@ export const StudioOfferSection: React.FC<StudioOfferSectionProps> = ({
           <button
             type="button"
             onClick={() => setHiddenForClientPreview(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded border border-[#E5DEC9] bg-white text-[#0E281B] font-semibold hover:border-[#0E281B] transition-colors whitespace-nowrap shrink-0"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] font-semibold hover:border-[#0E281B] transition-colors whitespace-nowrap shrink-0"
           >
             <EyeOff className="w-3.5 h-3.5" />
             <span>Masquer cette section (aperçu client seul)</span>

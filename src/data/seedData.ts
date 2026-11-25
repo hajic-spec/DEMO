@@ -313,6 +313,62 @@ export const STUDIO_OFFERS = [
   },
 ] as const;
 
+export const OFFER_SCENARIOS = [
+  {
+    id: 'visibilite',
+    label: 'Être visible à Grasse rapidement',
+    recommendedIds: ['formule-01', 'formule-02'] as const,
+    summary:
+      'Idéal pour démarrer avec une image haut de gamme et recevoir vos premiers appels de propriétés du Pays de Grasse sans gestion complexe.',
+  },
+  {
+    id: 'gestion',
+    label: 'Gagner du temps sur mes devis & factures',
+    recommendedIds: ['formule-03', 'formule-04'] as const,
+    summary:
+      'Chaque demande reçue sur le site alimente automatiquement votre espace /admin avec pré-devis chiffré, export PDF A4 et relance WhatsApp.',
+  },
+  {
+    id: 'terrain',
+    label: 'Piloter chantiers & clients depuis le terrain',
+    recommendedIds: ['formule-05', 'formule-06'] as const,
+    summary:
+      'Votre application mobile /app fonctionne même sans réseau dans les restanques (chrono, oliviers, OLD 06, devis express) et offre un carnet privé à vos clients.',
+  },
+] as const;
+
+export interface OfferComparisonRow {
+  feature: string;
+  levels: [string, string, string, string, string, string];
+}
+
+export const OFFER_COMPARISON_MATRIX: OfferComparisonRow[] = [
+  {
+    feature: 'Vitrine sur mesure & SEO local Grasse (06)',
+    levels: ['1 page', 'Multi-onglets', 'Multi-onglets', 'Multi-onglets', 'Multi-onglets', 'Multi-onglets'],
+  },
+  {
+    feature: 'Formulaire d’étude & appel direct',
+    levels: ['Inclus', 'Configurateur', 'Configurateur', 'Capture auto', 'Capture auto', 'Capture auto'],
+  },
+  {
+    feature: 'Espace gérant privé /admin (Devis PDF, Factures, Planning)',
+    levels: ['—', '—', 'Inclus', 'Sync Cloud', 'Sync Cloud', 'Sync Cloud'],
+  },
+  {
+    feature: 'Pré-devis auto + Rappels saisonniers (Oliviers / OLD)',
+    levels: ['—', '—', 'Manuel', 'Automatisé', 'Automatisé', 'Automatisé'],
+  },
+  {
+    feature: 'Portail Propriétaires & Attestations OLD 06',
+    levels: ['—', '—', '—', '—', 'Inclus', 'Inclus + App'],
+  },
+  {
+    feature: 'Application Mobile Terrain & Client (/app hors-ligne)',
+    levels: ['—', '—', '—', '—', '—', 'Inclus (PWA)'],
+  },
+];
+
 export const INITIAL_ADMIN_STORE: AdminStore = {
   leads: [
     {
