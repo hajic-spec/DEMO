@@ -227,7 +227,7 @@ export const LAUNCH_STEPS: LaunchStep[] = [
     phase: 'Phase 1 · Fondation (Jour J)',
     timing: '15 min',
     title: 'Vérifier le lien final et l’enregistrer ci-dessus',
-    detail: 'Validez l’ouverture de la vitrine, de /admin (PIN 06130) et de /app sur téléphone.',
+    detail: 'Validez l’ouverture de la vitrine, de /admin et de /app sur téléphone.',
   },
   {
     id: 'step-2',

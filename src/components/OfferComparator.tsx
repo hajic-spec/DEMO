@@ -220,14 +220,14 @@ export const OfferComparator: React.FC<OfferComparatorProps> = ({
                 </div>
                 {(focusedIndex >= 2 || focusedIndex >= 4) && (
                   <div className="mt-3 pt-2.5 border-t border-[#E5DEC9] flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-[#647068]">Essayer en direct :</span>
+                    <span className="text-[11px] text-[#647068]">Module sur activation :</span>
                     {focusedIndex >= 4 ? (
                       <button
                         type="button"
                         onClick={onOpenApp}
                         className="text-xs font-semibold text-[#0E281B] hover:text-[#9C7228] underline underline-offset-4"
                       >
-                        Ouvrir /app
+                        Aperçu /app
                       </button>
                     ) : (
                       <button
@@ -235,7 +235,7 @@ export const OfferComparator: React.FC<OfferComparatorProps> = ({
                         onClick={onOpenAdmin}
                         className="text-xs font-semibold text-[#0E281B] hover:text-[#9C7228] underline underline-offset-4"
                       >
-                        Ouvrir /admin
+                        Aperçu /admin
                       </button>
                     )}
                   </div>

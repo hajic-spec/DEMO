@@ -29,7 +29,9 @@ import {
   formatEuro,
   formatWhatsAppUrl,
 } from '../../utils/business';
+import { hasSessionUnlock, isPaidLicenseActive } from '../../utils/accessControl';
 import { appendLeadToStore, loadAdminStore, saveAdminStore } from '../../utils/storage';
+import { ActivationLockScreen } from '../ActivationLockScreen';
 import { ReliefEmblem } from '../ReliefLogo';
 import { FieldClientsView } from './FieldClientsView';
 import { FieldExpressQuoteView } from './FieldExpressQuoteView';
@@ -57,6 +59,9 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
   onBackToSite,
   onOpenAdmin,
 }) => {
+  const [unlocked, setUnlocked] = useState<boolean>(
+    () => isPaidLicenseActive() || hasSessionUnlock('app')
+  );
   const [store, setStore] = useState<AdminStore>(() => loadAdminStore());
   const [fieldLogs, setFieldLogs] = useState<FieldVisitLog[]>(() => loadFieldLogs());
   const [appMode, setAppMode] = useState<AppMode>('terrain');
@@ -345,6 +350,16 @@ export const FieldMobileApp: React.FC<FieldMobileAppProps> = ({
     () => getSeasonalAlertsForMonth(new Date().getMonth() + 1),
     []
   );
+
+  if (!unlocked) {
+    return (
+      <ActivationLockScreen
+        area="app"
+        onUnlock={() => setUnlocked(true)}
+        onBackToSite={onBackToSite}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#1A211D] flex flex-col pb-20 lg:pb-10 overflow-x-hidden">

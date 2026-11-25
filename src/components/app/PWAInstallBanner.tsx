@@ -22,6 +22,7 @@ export const OfflineIndicator: React.FC = () => {
 
 export const PWAInstallModalAndButton: React.FC = () => {
   const {
+    pwaAllowed,
     isInstalled,
     canInstallNative,
     isIOS,
@@ -30,7 +31,7 @@ export const PWAInstallModalAndButton: React.FC = () => {
     promptInstall,
   } = usePWAInstall();
 
-  if (isInstalled) {
+  if (!pwaAllowed || isInstalled) {
     return null;
   }
 

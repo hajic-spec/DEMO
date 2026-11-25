@@ -44,7 +44,15 @@ import {
   formatEuro,
   type WhatsAppTemplateType,
 } from '../../utils/business';
+import {
+  getConfiguredPasscode,
+  grantSessionUnlock,
+  hasSessionUnlock,
+  isPaidLicenseActive,
+  verifyAccessPasscode,
+} from '../../utils/accessControl';
 import { loadAdminStore, resetAdminStore, saveAdminStore } from '../../utils/storage';
+import { ActivationLockScreen } from '../ActivationLockScreen';
 import { ReliefEmblem } from '../ReliefLogo';
 import { PrintDocumentModal } from './PrintDocumentModal';
 import { SocialLaunchKit } from './SocialLaunchKit';
@@ -64,10 +72,9 @@ type AdminTab =
   | 'social'
   | 'backup';
 
-const DEMO_PIN = '06130';
-
 export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
-  const [unlocked, setUnlocked] = useState(false);
+  const paidLicense = isPaidLicenseActive();
+  const [unlocked, setUnlocked] = useState<boolean>(() => hasSessionUnlock('admin'));
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -137,11 +144,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput.trim() === DEMO_PIN) {
+    const expected = getConfiguredPasscode('admin');
+    if (verifyAccessPasscode(pinInput, expected)) {
+      grantSessionUnlock('admin');
       setUnlocked(true);
       setPinError('');
     } else {
-      setPinError('Code incorrect. Code de démonstration : 06130');
+      setPinError('Code incorrect. Veuillez contacter votre conseiller.');
     }
   };
 
@@ -338,8 +347,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
     reader.readAsText(file);
   };
 
-  // ==================== PIN GATE ====================
+  // ==================== LICENSE / PIN GATE ====================
   if (!unlocked) {
+    if (!paidLicense) {
+      return (
+        <ActivationLockScreen
+          area="admin"
+          onUnlock={() => setUnlocked(true)}
+          onBackToSite={onBackToSite}
+        />
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#163B29] via-[#0E281B] to-[#091B12] flex items-center justify-center p-5">
         <div className="bg-[#FAF8F3] border border-[#CFA75B] rounded-2xl p-8 md:p-10 max-w-md w-full text-center shadow-2xl">
@@ -365,7 +384,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
               inputMode="numeric"
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
-              placeholder="Code PIN (06130)"
+              placeholder="Saisir votre code PIN"
               className="w-full text-center tracking-[0.35em] font-mono text-xl font-bold py-3 px-4 rounded-lg border border-[#E5DEC9] bg-white text-[#0E281B] focus:outline-none focus:border-[#B5893A]"
             />
             {pinError && (
@@ -383,10 +402,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToSite }) => {
           </form>
 
           <div className="mt-5 pt-4 border-t border-[#E5DEC9] flex flex-col gap-2 text-xs text-[#647068]">
-            <span>
-              Code PIN de démonstration (code postal Grasse) :{' '}
-              <strong className="font-mono text-[#0E281B]">06130</strong>
-            </span>
             <button
               type="button"
               onClick={onBackToSite}
