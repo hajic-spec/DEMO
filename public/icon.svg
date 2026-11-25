@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="96" fill="#0E281B"/>
+  <path d="M132 396C72 308 88 176 202 114C308 58 432 96 462 204" stroke="#CFA75B" stroke-width="16" stroke-linecap="round"/>
+  <path d="M132 396C75 308 90 182 204 116" stroke="#5A7D2C" stroke-width="16" stroke-linecap="round"/>
+  <path d="M202 116C174 74 132 54 84 58C112 100 154 120 202 116Z" fill="#5D872B"/>
+  <path d="M204 116C222 70 264 42 316 38C288 86 248 112 204 116Z" fill="#4E7324"/>
+  <path d="M172 140C126 124 86 134 54 166C100 182 142 172 172 140Z" fill="#719B38"/>
+  <path d="M236 102C274 104 314 92 346 66C308 54 268 68 236 102Z" fill="#5D872B"/>
+  <ellipse cx="182" cy="186" rx="22" ry="31" transform="rotate(-18 182 186)" fill="#9EB832"/>
+  <ellipse cx="228" cy="170" rx="20" ry="29" transform="rotate(24 228 170)" fill="#89A324"/>
+  <text x="272" y="318" text-anchor="middle" font-family="Georgia, serif" font-size="82" font-weight="700" letter-spacing="6" fill="#FAF8F3">RELIEF</text>
+  <text x="272" y="388" text-anchor="middle" font-family="Georgia, serif" font-size="68" font-weight="600" letter-spacing="4" fill="#CFA75B">PAYSAGE</text>
+</svg>

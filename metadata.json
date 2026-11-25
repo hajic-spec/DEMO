@@ -1,0 +1,6 @@
+{
+  "name": "Relief Paysage",
+  "description": "Domaine et jardin de prestige à Grasse (06) — Site vitrine paysagiste, proposition multi-formules et espace gérant dissocié.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
